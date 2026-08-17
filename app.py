@@ -69,13 +69,6 @@ st.markdown("""
         margin-top: 0.5rem;
     }
 
-    .step {
-        text-align: center;
-        padding: 1rem;
-        border-radius: 14px;
-        border: 1px solid rgba(128,128,128,0.2);
-    }
-
     .footer {
         text-align: center;
         opacity: 0.65;
@@ -91,7 +84,6 @@ st.markdown("""
 <div class="hero">
     <h1>🧬 SkinGuard AI</h1>
     <p>CNN-Based Skin Lesion Classification System</p>
-    <p><b>MACHINE SPECTRA 1.0</b> • III Year AIML Mini Project</p>
 </div>
 """, unsafe_allow_html=True)
 
@@ -183,12 +175,10 @@ if uploaded_file and model is not None:
 
     col1, col2 = st.columns([1, 1])
 
-    # IMAGE
     with col1:
         st.markdown("### 🖼️ Uploaded Image")
         st.image(image, use_container_width=True)
 
-    # PROCESS
     with col2:
         st.markdown("### 🤖 CNN Analysis")
 
@@ -263,70 +253,6 @@ if uploaded_file and model is not None:
         st.progress(min(score / 100, 1.0))
 
 # ---------------------------------------------------------
-# HOW IT WORKS
-# ---------------------------------------------------------
-st.markdown("---")
-st.subheader("⚙️ How It Works")
-
-steps = st.columns(4)
-
-with steps[0]:
-    st.markdown("""
-    <div class="step">
-    <h3>1️⃣</h3>
-    <b>Upload</b><br>
-    Skin-lesion image
-    </div>
-    """, unsafe_allow_html=True)
-
-with steps[1]:
-    st.markdown("""
-    <div class="step">
-    <h3>2️⃣</h3>
-    <b>Preprocess</b><br>
-    Resize & normalize
-    </div>
-    """, unsafe_allow_html=True)
-
-with steps[2]:
-    st.markdown("""
-    <div class="step">
-    <h3>3️⃣</h3>
-    <b>CNN Analysis</b><br>
-    Extract image features
-    </div>
-    """, unsafe_allow_html=True)
-
-with steps[3]:
-    st.markdown("""
-    <div class="step">
-    <h3>4️⃣</h3>
-    <b>Classification</b><br>
-    Predict lesion class
-    </div>
-    """, unsafe_allow_html=True)
-
-# ---------------------------------------------------------
-# MODEL INFORMATION
-# ---------------------------------------------------------
-st.markdown("---")
-st.subheader("📋 Model Information")
-
-info1, info2, info3, info4 = st.columns(4)
-
-with info1:
-    st.metric("Dataset", "HAM10000")
-
-with info2:
-    st.metric("Classes", "7")
-
-with info3:
-    st.metric("Input Size", "224 × 224")
-
-with info4:
-    st.metric("Framework", "TensorFlow")
-
-# ---------------------------------------------------------
 # DISCLAIMER
 # ---------------------------------------------------------
 st.markdown("---")
@@ -337,8 +263,7 @@ st.warning(
 
 st.markdown("""
 <div class="footer">
-    <b>SkinGuard AI</b> • CNN-Based Skin Lesion Classifier<br>
-    MACHINE SPECTRA 1.0 • III Year AIML
+    <b>SkinGuard AI</b> • CNN-Based Skin Lesion Classifier
 </div>
 """, unsafe_allow_html=True)
 

@@ -4,106 +4,84 @@ import numpy as np
 from PIL import Image
 import requests
 import os
+import plotly.graph_objects as go
 
-# ---------------------------------------------------------
-# PAGE CONFIG
-# ---------------------------------------------------------
+# =========================================================
+# PAGE
+# =========================================================
 st.set_page_config(
-    page_title="SkinGuard AI | Skin Lesion Classifier",
+    page_title="SkinGuard AI",
     page_icon="🧬",
     layout="wide"
 )
 
-# ---------------------------------------------------------
-# CUSTOM CSS
-# ---------------------------------------------------------
+# =========================================================
+# STYLE
+# =========================================================
 st.markdown("""
 <style>
-    .main {
-        padding-top: 1rem;
-    }
+.main {
+    padding-top: 1rem;
+}
 
-    .hero {
-        padding: 2rem;
-        border-radius: 20px;
-        text-align: center;
-        margin-bottom: 1.5rem;
-        border: 1px solid rgba(128,128,128,0.25);
-    }
+.hero {
+    padding: 2.5rem 1rem;
+    text-align: center;
+    border-radius: 22px;
+    border: 1px solid rgba(128,128,128,.25);
+    margin-bottom: 25px;
+}
 
-    .hero h1 {
-        font-size: 3rem;
-        margin-bottom: 0.3rem;
-    }
+.hero h1 {
+    font-size: 3.2rem;
+    margin-bottom: 5px;
+}
 
-    .hero p {
-        font-size: 1.1rem;
-        opacity: 0.75;
-    }
+.hero p {
+    font-size: 1.1rem;
+    opacity: .75;
+}
 
-    .card {
-        padding: 1.4rem;
-        border-radius: 16px;
-        border: 1px solid rgba(128,128,128,0.25);
-        margin-bottom: 1rem;
-    }
+.card {
+    padding: 20px;
+    border-radius: 18px;
+    border: 1px solid rgba(128,128,128,.25);
+    margin-bottom: 20px;
+}
 
-    .prediction {
-        padding: 1.8rem;
-        border-radius: 18px;
-        text-align: center;
-        border: 2px solid rgba(128,128,128,0.35);
-    }
+.result {
+    text-align: center;
+    padding: 25px;
+    border-radius: 20px;
+    border: 2px solid rgba(128,128,128,.3);
+}
 
-    .prediction h2 {
-        margin-bottom: 0.2rem;
-    }
+.result h1 {
+    font-size: 2.5rem;
+}
 
-    .big-result {
-        font-size: 2.2rem;
-        font-weight: 700;
-    }
-
-    .confidence {
-        font-size: 1.3rem;
-        margin-top: 0.5rem;
-    }
-
-    .footer {
-        text-align: center;
-        opacity: 0.65;
-        padding: 2rem 0 1rem 0;
-    }
+.footer {
+    text-align: center;
+    opacity: .65;
+    padding: 30px;
+}
 </style>
 """, unsafe_allow_html=True)
 
-# ---------------------------------------------------------
+# =========================================================
 # HEADER
-# ---------------------------------------------------------
+# =========================================================
 st.markdown("""
 <div class="hero">
     <h1>🧬 SkinGuard AI</h1>
     <p>CNN-Based Skin Lesion Classification System</p>
+    <p><b>MACHINE SPECTRA 1.0</b> • III Year AIML Mini Project</p>
 </div>
 """, unsafe_allow_html=True)
 
-# ---------------------------------------------------------
-# PROJECT INTRODUCTION
-# ---------------------------------------------------------
-st.markdown("""
-<div class="card">
-<h3>🔬 About the Project</h3>
-<p>
-SkinGuard AI uses a Convolutional Neural Network (CNN) to classify
-dermoscopic skin-lesion images into seven categories from the HAM10000
-dataset. Upload an image below to test the trained model.
-</p>
-</div>
-""", unsafe_allow_html=True)
-
-# ---------------------------------------------------------
+# =========================================================
 # MODEL
-# ---------------------------------------------------------
+# =========================================================
 MODEL_URL = (
     "https://github.com/kirthan2007nkp-star/"
     "Skin-Lesion-Classifier-Project./releases/download/"
@@ -132,140 +110,403 @@ class_labels = {
     "vasc": "Vascular Lesions"
 }
 
+# =========================================================
+# LOAD MODEL
+# =========================================================
 @st.cache_resource
 def load_model():
+
     if not os.path.exists(MODEL_PATH):
-        with requests.get(MODEL_URL, stream=True) as response:
+
+        with requests.get(
+            MODEL_URL,
+            stream=True
+        ) as response:
+
             response.raise_for_status()
 
             with open(MODEL_PATH, "wb") as file:
-                for chunk in response.iter_content(chunk_size=8192):
+
+                for chunk in response.iter_content(
+                    chunk_size=8192
+                ):
+
                     if chunk:
                         file.write(chunk)
 
     return tf.keras.models.load_model(MODEL_PATH)
 
-# ---------------------------------------------------------
-# LOAD MODEL
-# ---------------------------------------------------------
-try:
-    model = load_model()
-    st.success("✅ CNN model loaded successfully")
-except Exception:
-    model = None
-    st.error("❌ Could not load the model.")
 
-# ---------------------------------------------------------
-# UPLOAD SECTION
-# ---------------------------------------------------------
-st.subheader("📤 Upload Skin-Lesion Image")
+try:
+
+    model = load_model()
+
+    st.success("🟢 CNN Model Ready")
+
+except Exception:
+
+    model = None
+
+    st.error("Model could not be loaded.")
+
+# =========================================================
+# INTRO
+# =========================================================
+st.markdown("""
+<div class="card">
+
+### 🔬 AI Skin Lesion Analysis
+
+Upload a dermoscopic skin-lesion image and the trained
+CNN model will classify it into one of seven categories.
+
+The application displays the model's prediction,
+confidence and probability distribution.
+
+</div>
+""", unsafe_allow_html=True)
+
+# =========================================================
+# UPLOAD
+# =========================================================
+st.subheader("📤 Upload Image")
 
 uploaded_file = st.file_uploader(
-    "Choose a JPG or PNG image",
-    type=["jpg", "jpeg", "png"],
-    help="Upload a dermoscopic skin-lesion image for classification."
+    "Choose a JPG, JPEG or PNG image",
+    type=["jpg", "jpeg", "png"]
 )
 
-# ---------------------------------------------------------
+# =========================================================
 # PREDICTION
-# ---------------------------------------------------------
+# =========================================================
 if uploaded_file and model is not None:
 
-    image = Image.open(uploaded_file).convert("RGB")
+    original = Image.open(uploaded_file).convert("RGB")
 
-    col1, col2 = st.columns([1, 1])
+    # -----------------------------------------------------
+    # IMAGE + PREPROCESSING
+    # -----------------------------------------------------
+    st.markdown("---")
+
+    st.subheader("🔍 Image Processing")
+
+    col1, col2, col3 = st.columns(3)
+
+    processed = original.resize((224, 224))
 
     with col1:
-        st.markdown("### 🖼️ Uploaded Image")
-        st.image(image, use_container_width=True)
+        st.markdown("**Original Image**")
+        st.image(
+            original,
+            use_container_width=True
+        )
 
     with col2:
-        st.markdown("### 🤖 CNN Analysis")
+        st.markdown("**CNN Input (224 × 224)**")
+        st.image(
+            processed,
+            use_container_width=True
+        )
 
-        with st.spinner("Analyzing image..."):
-            processed_image = image.resize((224, 224))
+    with col3:
+        st.markdown("**Preprocessing**")
 
-            image_array = np.array(
-                processed_image,
-                dtype=np.float32
-            ) / 255.0
+        st.info("""
+        RGB Image
 
-            image_array = np.expand_dims(
-                image_array,
-                axis=0
-            )
+        ↓
 
-            prediction = model.predict(
-                image_array,
-                verbose=0
-            )[0]
+        Resize 224 × 224
 
-            predicted_index = int(np.argmax(prediction))
-            predicted_class = class_names[predicted_index]
-            confidence = float(prediction[predicted_index]) * 100
+        ↓
+
+        Normalize 0–1
+
+        ↓
+
+        CNN Model
+        """)
+
+    # -----------------------------------------------------
+    # PREPARE IMAGE
+    # -----------------------------------------------------
+    image_array = np.array(
+        processed,
+        dtype=np.float32
+    ) / 255.0
+
+    image_array = np.expand_dims(
+        image_array,
+        axis=0
+    )
+
+    # -----------------------------------------------------
+    # PREDICTION
+    # -----------------------------------------------------
+    with st.spinner("🧠 CNN is analyzing the image..."):
+
+        prediction = model.predict(
+            image_array,
+            verbose=0
+        )[0]
+
+    predicted_index = int(
+        np.argmax(prediction)
+    )
+
+    predicted_class = class_names[
+        predicted_index
+    ]
+
+    confidence = float(
+        prediction[predicted_index]
+    ) * 100
+
+    # -----------------------------------------------------
+    # RESULT
+    # -----------------------------------------------------
+    st.markdown("---")
+
+    st.subheader("🎯 AI Prediction")
+
+    result_col, gauge_col = st.columns(2)
+
+    with result_col:
 
         st.markdown(
             f"""
-            <div class="prediction">
-                <h2>Prediction</h2>
-                <div class="big-result">
-                    {predicted_class.upper()}
-                </div>
-                <div>
-                    {class_labels[predicted_class]}
-                </div>
-                <div class="confidence">
-                    Confidence: <b>{confidence:.2f}%</b>
-                </div>
+            <div class="result">
+
+            <h3>Predicted Class</h3>
+
+            <h1>
+            {predicted_class.upper()}
+            </h1>
+
+            <p>
+            {class_labels[predicted_class]}
+            </p>
+
+            <h3>
+            Confidence: {confidence:.2f}%
+            </h3>
+
             </div>
             """,
             unsafe_allow_html=True
         )
 
     # -----------------------------------------------------
-    # PROBABILITY DISTRIBUTION
+    # CONFIDENCE GAUGE
     # -----------------------------------------------------
-    st.markdown("---")
-    st.subheader("📊 Classification Probabilities")
+    with gauge_col:
 
-    probability_data = {
-        class_names[i].upper(): float(prediction[i]) * 100
-        for i in range(len(class_names))
-    }
-
-    st.bar_chart(probability_data)
-
-    # -----------------------------------------------------
-    # TOP PREDICTIONS
-    # -----------------------------------------------------
-    st.subheader("🏆 Top Predictions")
-
-    sorted_indices = np.argsort(prediction)[::-1]
-
-    for rank, index in enumerate(sorted_indices[:3], start=1):
-        name = class_names[index].upper()
-        score = float(prediction[index]) * 100
-
-        st.write(
-            f"**{rank}. {name}** — {score:.2f}%"
+        fig = go.Figure(
+            go.Indicator(
+                mode="gauge+number",
+                value=confidence,
+                title={
+                    "text": "Model Confidence"
+                },
+                gauge={
+                    "axis": {
+                        "range": [0, 100]
+                    },
+                    "bar": {
+                        "thickness": 0.35
+                    },
+                    "steps": [
+                        {
+                            "range": [0, 50]
+                        },
+                        {
+                            "range": [50, 75]
+                        },
+                        {
+                            "range": [75, 100]
+                        }
+                    ]
+                }
+            )
         )
 
-        st.progress(min(score / 100, 1.0))
+        fig.update_layout(
+            height=300,
+            margin=dict(
+                l=20,
+                r=20,
+                t=50,
+                b=20
+            )
+        )
 
-# ---------------------------------------------------------
+        st.plotly_chart(
+            fig,
+            use_container_width=True
+        )
+
+    # =====================================================
+    # PROBABILITY DISTRIBUTION
+    # =====================================================
+    st.markdown("---")
+
+    st.subheader(
+        "📊 Seven-Class Probability Distribution"
+    )
+
+    probabilities = (
+        prediction * 100
+    )
+
+    fig = go.Figure()
+
+    fig.add_trace(
+        go.Bar(
+            x=[
+                x.upper()
+                for x in class_names
+            ],
+            y=probabilities,
+            text=[
+                f"{x:.2f}%"
+                for x in probabilities
+            ],
+            textposition="auto"
+        )
+    )
+
+    fig.update_layout(
+        xaxis_title="Lesion Class",
+        yaxis_title="Probability (%)",
+        yaxis=dict(
+            range=[0, 100]
+        ),
+        height=420
+    )
+
+    st.plotly_chart(
+        fig,
+        use_container_width=True
+    )
+
+    # =====================================================
+    # TOP 3
+    # =====================================================
+    st.subheader("🏆 Top 3 Predictions")
+
+    sorted_indices = np.argsort(
+        prediction
+    )[::-1]
+
+    for rank, index in enumerate(
+        sorted_indices[:3],
+        start=1
+    ):
+
+        name = class_names[index].upper()
+
+        score = (
+            float(prediction[index])
+            * 100
+        )
+
+        st.write(
+            f"**{rank}. {name} — "
+            f"{score:.2f}%**"
+        )
+
+        st.progress(
+            min(score / 100, 1.0)
+        )
+
+    # =====================================================
+    # MODEL EXPLANATION
+    # =====================================================
+    st.markdown("---")
+
+    st.subheader(
+        "🧠 How the CNN Makes a Prediction"
+    )
+
+    a, b, c, d = st.columns(4)
+
+    with a:
+        st.markdown(
+            "### 1️⃣\n**Input**\n\nSkin image"
+        )
+
+    with b:
+        st.markdown(
+            "### 2️⃣\n**Features**\n\nCNN extracts visual patterns"
+        )
+
+    with c:
+        st.markdown(
+            "### 3️⃣\n**Analysis**\n\nModel calculates probabilities"
+        )
+
+    with d:
+        st.markdown(
+            "### 4️⃣\n**Output**\n\nSeven-class prediction"
+        )
+
+# =========================================================
+# MODEL INFORMATION
+# =========================================================
+st.markdown("---")
+
+st.subheader("📋 Model Information")
+
+a, b, c, d = st.columns(4)
+
+with a:
+    st.metric(
+        "Dataset",
+        "HAM10000"
+    )
+
+with b:
+    st.metric(
+        "Classes",
+        "7"
+    )
+
+with c:
+    st.metric(
+        "Input",
+        "224 × 224"
+    )
+
+with d:
+    st.metric(
+        "Framework",
+        "TensorFlow"
+    )
+
+# =========================================================
 # DISCLAIMER
-# ---------------------------------------------------------
+# =========================================================
 st.markdown("---")
 
 st.warning(
-    "⚠️ For educational and research purposes only. "
-    "This classifier is not a medical diagnosis and should not "
-    "be used to make medical decisions."
+    "⚠️ Research Prototype: This AI classifier is designed "
+    "for academic demonstration and research purposes. "
+    "Predictions should not be considered a medical diagnosis "
+    "or a substitute for professional medical advice."
 )
 
+# =========================================================
+# FOOTER
+# =========================================================
 st.markdown("""
 <div class="footer">
-    <b>SkinGuard AI</b> • CNN-Based Skin Lesion Classifier
+
+<b>SkinGuard AI</b><br>
+
+CNN-Based Skin Lesion Classifier<br>
+
+MACHINE SPECTRA 1.0 • III Year AIML
+
 </div>
-""", unsafe_allow_html=True)    
+""", unsafe_allow_html=True)
 
